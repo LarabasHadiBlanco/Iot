@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Datos del IoT Larabas Hadi</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h1>Datos del IoT</h1>
+
+  <button onclick="generarDatosAleatorios()">Generar Datos Aleatorios</button>
+  <button onclick="mostrarFormulario()">Introducir Datos Manualmente</button>
+  <button onclick="guardarDatosEnArchivo()">Guardar Datos en Archivo</button>
+
+  <div id="formulario" style="display: none;">
+    <h2>Introducir Datos Manualmente</h2>
+    <label>Fecha:</label>
+    <input type="datetime-local" id="fecha"><br>
+    <label>Voltaje:</label>
+    <input type="number" id="voltaje"><br>
+    <label>Potencia:</label>
+    <input type="number" id="potencia"><br>
+    <button onclick="guardarDatosManuales()">Guardar Datos</button>
+    <button onclick="limpiarFormulario()">Limpiar</button>
+  </div>
+
+  <canvas id="grafico" width="400" height="200"></canvas>
+
+  <table id="tabla">
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>Voltaje</th>
+        <th>Potencia</th>
+        <th>intensidad</th>
+      </tr>
+    </thead>
+    <tbody id="tablaBody"></tbody>
+  </table>
+
+  <script>
+    var datos = [];
+
+    // Generar datos aleatorios
+    function generarDatosAleatorios() {
+      datos = [];
+
+      var maxDatos = 5;
+      for (var i = 0; i < maxDatos; i++) {
+        var fecha = generarFechaAleatoria();
+        var voltaje = generarValorAleatorio(0, 10);
+        var potencia = generarValorAleatorio(0, 100);
+        var intensidad = voltaje / potencia;
+
+        datos.push({ fecha: fecha, voltaje: voltaje, potencia: potencia, intensidad: intensidad });
+      }
+    }
+
+    // Generar una fecha aleatoria en el formato YYYY-MM-DD HH:MM:SS
+    function generarFechaAleatoria() {
+      var fecha = new Date();
+
+      var year = fecha.getFullYear();
+      var month = ("0" + (fecha.getMonth() + 1)).slice(-2);
+      var day = ("0" + fecha.getDate()).slice(-2);
+
+      var hour = ("0" + fecha.getHours()).slice(-2);
+      var minute = ("0" + fecha.getMinutes()).slice(-2);
+      var second = ("0" + fecha.getSeconds()).slice(-2);
+
+      return year + "-" + month + "-" + day + " " + hour + ":" + minute + ":" + second;
+    }
+
+    // Generar un valor aleatorio entre un rango dado
+    function generarValorAleatorio(min, max) {
+      return Math.random() * (max - min) + min;
+    }
+
+    // Mostrar los datos en un gráfico
+    function mostrarGrafico() {
+      var labels = [];
+      var voltajes = [];
+      var potencias = [];
+
+      for (var i = 0; i < datos.length; i++) {
+        labels.push(datos[i].fecha);
+        voltajes.push(parseFloat(datos[i].voltaje));
+        potencias.push(parseFloat(datos[i].potencia));
+      }
+
+      var ctx = document.getElementById('grafico').getContext('2d');
+      var chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Voltaje',
+            data: voltajes,
+            borderColor: 'blue',
+            fill: false
+          }, {
+            label: 'Potencia',
+            data: potencias,
+            borderColor: 'green',
+            fill: false
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: {
+              display: true,
+              title: {
+                display: true,
+                text: 'Fecha'
+              }
+            },
+            y: {
+              display: true,
+              title: {
+                display: true,
+                text: 'Valor'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Mostrar los datos en una tabla
+    function mostrarTabla() {
+      var tablaBody = document.getElementById('tablaBody');
+      tablaBody.innerHTML = '';
+
+      for (var i = 0; i < datos.length; i++) {
+        var fila = '<tr>' +
+          '<td>' + datos[i].fecha + '</td>' +
+          '<td>' + datos[i].voltaje + '</td>' +
+          '<td>' + datos[i].potencia + '</td>' +
+          '<td>' + datos[i].intensidad + '</td>' +
+          '</tr>';
+        tablaBody.innerHTML += fila;
+      }
+    }
+
+    // Mostrar ambos gráfico y tabla
+    function mostrarAmbos() {
+      mostrarGrafico();
+      mostrarTabla();
+    }
+
+    // Mostrar formulario para introducir datos manualmente
+    function mostrarFormulario() {
+      var formulario = document.getElementById('formulario');
+      formulario.style.display = 'block';
+    }
+
+    // Guardar datos introducidos manualmente
+    function guardarDatosManuales() {
+      var fecha = document.getElementById('fecha').value;
+      var voltaje = document.getElementById('voltaje').value;
+      var potencia = document.getElementById('potencia').value;
+      var intensidad = voltaje / potencia;
+
+      datos.push({ fecha: fecha, voltaje: voltaje, potencia: potencia, intensidad: intensidad });
+
+      limpiarFormulario();
+      mostrarAmbos();
+    }
+
+    // Limpiar el formulario
+    function limpiarFormulario() {
+      document.getElementById('fecha').value = '';
+      document.getElementById('voltaje').value = '';
+      document.getElementById('potencia').value = '';
+    }
+
+    // Guardar los datos en un archivo JSON mediante el backend en PHP
+    function guardarDatosEnArchivo() {
+      var jsonData = JSON.stringify(datos);
+
+      var xhttp = new XMLHttpRequest();
+      xhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200) {
+          console.log(this.responseText);
+        }
+      };
+      xhttp.open('POST', 'guardar_datos.php', true);
+      xhttp.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
+      xhttp.send('json=' + encodeURIComponent(jsonData));
+    }
+
+    // Inicializar la página
+    function inicializar() {
+      generarDatosAleatorios();
+      mostrarAmbos();
+    }
+
+    inicializar();
+  </script>
+</body>
+</html>
